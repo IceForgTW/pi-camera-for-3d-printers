@@ -22,9 +22,12 @@
 from __future__ import division
 from __future__ import print_function
 
+import ftplib
 import logging
 import os
+import subprocess
 import sys
+import time
 
 from time import sleep
 
@@ -46,9 +49,7 @@ class settings:
     stills_folder = '.\stills'
     threshold_percentage = float(0.96)
     timelapse_delay = 10  # delay in seconds
-    ftp_host = '127.0.0.1'
-    ftp_username = 'test_user'
-    ftp_password = 'asdf1234'
+    begin_timelapse_delay = 300  # 5 minute delay to allow for heating and such
 
     # ignore the ones below; they get changed in runtime
 
@@ -140,29 +141,55 @@ def take_picture(camera, picname):
     pass
 
 
-def threshold_check(new_pic):
+def threshold_check(new_pic, old_pic=None):
     logging.debug("Checking threshold of {}".format(new_pic))
     # we create an otherwise unnecessary variable here in order to avoid
     # making 4 os calls every threshold check
     new_pic_size = get_image_size(new_pic)
 
+    if not old_pic:
+        old_pic = settings.baseline_size
+    else:
+        old_pic = get_image_size(old_pic)
     t_variance = (new_pic_size -
                   (new_pic_size *
                    settings.threshold_percentage))
 
-    if (settings.baseline_size < (new_pic_size + t_variance) or
-            settings.baseline_size > (new_pic_size - t_variance)):
+    if (old_pic < (new_pic_size + t_variance) or
+            old_pic > (new_pic_size - t_variance)):
         logging.debug("New pic {} has size {}, currently outside of threshold"
-                      " {}. Starting recording!".format(new_pic,
-                                                        new_pic_size,
-                                                        settings.baseline_size
-                                                        ))
+                      " {}!".format(new_pic,
+                                    new_pic_size,
+                                    old_pic
+                                    ))
         return True
     else:
         logging.debug("New pic {} has size {}, inside the threshold for "
                       "change. Continuing as before!".format(new_pic,
                                                              new_pic_size))
         return False
+
+
+def upload_movie(file_to_upload):
+
+    session = ftplib.FTP(settings.ftp_host,
+                         settings.ftp_username,
+                         settings.ftp_password)
+    # file to send
+    new_file = open(str(file_to_upload), 'rb')
+    # send the file
+    session.storbinary('STOR {}'.format(file_to_upload), new_file)
+    new_file.close()  # close file and FTP
+    session.quit()
+
+
+def create_movie():
+    subprocess.call('gst-launch-1.0 multifilesrc location=stills\pic%05d.jpg '
+                    'index=1 caps="image/jpeg,framerate=24/1" ! jpegdec ! '
+                    'omxh264enc ! avimux ! filesink location=timelapse.avi')
+    subprocess.call('sync')
+
+    upload_movie('timelapse.avi')
 
 
 # **************************************************
@@ -186,7 +213,8 @@ def main():
     settings.stills_folder = config.get('Info', 'stills_folder_location')
 
     camera = picamera.PiCamera()
-    settings.pic_name = "pic{}.jpg".format(settings.picture_count)
+    settings.pic_name = "pic{}.jpg".format(str(settings.picture_count).
+                                           zfill(5))
     if not os.path.exists(settings.stills_folder):
         logging.debug(
             "Stills folder {} doesn't exist! Creating!".format(
@@ -220,19 +248,43 @@ def main():
         settings.picture_count += 1
         take_picture(camera, settings.pic_name)
 
-        if threshold_check(settings.pic_name):
-            settings.currently_recording = True
-
         if not settings.currently_recording:
 
+            if threshold_check(settings.pic_name):
+                settings.currently_recording = True
+                settings.recording_start_time = int(time.time())
+
             oldest_pic = (settings.stills_folder + "\\" + "pic{}.jpg".
-                          format(settings.picture_count - 5))
+                          format(str(settings.picture_count - 5)).zfill(5))
             if os.path.exists(oldest_pic):
                 os.remove(oldest_pic)
 
-        '''
-        WHAT COMES NEXT?!?!?!?!
-        '''
+        else:
+            if int(time.time()) < (settings.recording_start_time +
+                                   settings.begin_timelapse_delay):
+                # we ignore basically everything for the beginning delay and
+                # assume that everything that happens is part of the video
+                pass
+            else:
+                picture_list = [settings.stills_folder+"\\"+"pic{}.jpg".format(
+                                    str(settings.picture_count-1)).zfill(5),
+                                settings.stills_folder+"\\"+"pic{}.jpg".format(
+                                    str(settings.picture_count-2)).zfill(5),
+                                settings.stills_folder+"\\"+"pic{}.jpg".format(
+                                    str(settings.picture_count-3)).zfill(5),
+                                settings.stills_folder+"\\"+"pic{}.jpg".format(
+                                    str(settings.picture_count-4)).zfill(5),
+                                settings.stills_folder+"\\"+"pic{}.jpg".format(
+                                    str(settings.picture_count-5)).zfill(5)
+                                ]
+                picture_list_check = []
+                for older_pic in picture_list:
+                    picture_list_check.append(
+                            threshold_check(settings.pic_name, older_pic))
+                if True in picture_list_check:
+                    settings.currently_recording = False
+                    create_movie()
+
 
 if __name__ == '__main__':
 
