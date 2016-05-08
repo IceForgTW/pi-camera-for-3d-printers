@@ -11,3 +11,5 @@ This program is designed to be started on system boot. How it works:
 * If enough changes between pictures, the program assumes that you've started a 3D print on the printer, at which point it begins saving the images.
 * When enough of the pictures reach a similar threshold, it assumes the print has finished and will call ffmpeg to create a video of the stored images.
 * On finishing the video, it will attempt to upload the file to an ftp service of your choice.
+
+If you're missing streamer and omxh264enc; run the commands located here: https://www.raspberrypi.org/forums/viewtopic.php?t=72435
