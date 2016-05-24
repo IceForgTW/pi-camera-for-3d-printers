@@ -278,7 +278,7 @@ def main(settings=settings):
     # started another timelapse
     settings.currently_recording = False
     settings.picture_count = 0
-    beginning_recording_check = [True, True, True]
+    beginning_recording_check = [True for _ in range(5)]
     picture_list_check = []
     final_list_check = [False for _ in range(15)]
 
@@ -352,9 +352,9 @@ def main(settings=settings):
 
                 beginning_recording_check.append(
                     threshold_check(settings.pic_name))
+                beginning_recording_check.pop(0)
                 logging.debug("beginning_recording_check = {}".format(
                     beginning_recording_check))
-                beginning_recording_check.pop(0)
 
                 if True not in beginning_recording_check:
                     settings.currently_recording = True
