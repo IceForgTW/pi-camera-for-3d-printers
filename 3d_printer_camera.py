@@ -410,7 +410,7 @@ def main(settings=settings):
                             threshold_check(settings.pic_name,
                                             pic_minus_seven))
 
-                    if len(picture_list_check > 15):
+                    if len(picture_list_check) > 15:
                         # remove the first item in the list. That way the list
                         # constantly cycles through results.
                         picture_list_check.pop(0)
