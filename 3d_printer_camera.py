@@ -325,8 +325,8 @@ def main(settings=settings):
     # upcoming print.
     while True:
         settings.baseline_size = capture_baseline()
-    if settings.baseline_size is not None:
-        break
+        if settings.baseline_size is not None:
+            break
     # now that we have our baseline size, we can start doing timelapse images
     # and keeping track of what we have.
 
@@ -412,9 +412,10 @@ def main(settings=settings):
                             if False not in final_list_check:
                                 settings.currently_recording = False
                                 create_movie()
-            # we made it this far, so restart the whole process!
-            shutil.rmtree(settings.stills_folder)
-            break
+                                # we made it this far, so restart the whole
+                                # process!
+                                shutil.rmtree(settings.stills_folder)
+                                break
 
     except KeyboardInterrupt:
         # we don't need the baseline images anymore
