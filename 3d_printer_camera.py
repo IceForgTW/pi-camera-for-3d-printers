@@ -211,15 +211,15 @@ def upload_movie(file_to_upload, settings=settings):
                 before_last_dot = file_to_upload[:last_dot]
                 after_last_dot = file_to_upload[last_dot:]
 
-            if(before_last_dot + str(ftu) + after_last_dot not in
-                    session_contents):
-                new_file_to_upload = before_last_dot + str(ftu) +\
-                    after_last_dot
+                if(before_last_dot + str(ftu) + after_last_dot not in
+                        session_contents):
+                    new_file_to_upload = before_last_dot + str(ftu) +\
+                        after_last_dot
 
-                # gotta rename it so now we can upload it
-                shutil.move(file_to_upload, new_file_to_upload)
-                file_to_upload = new_file_to_upload
-                break
+                    # gotta rename it so now we can upload it
+                    shutil.move(file_to_upload, new_file_to_upload)
+                    file_to_upload = new_file_to_upload
+                    break
 
         # file to send
         new_file = open(str(os.getcwd() + "/" + file_to_upload), 'rb')
