@@ -164,6 +164,8 @@ def threshold_check(new_pic, old_pic=None, settings=settings):
         if(compute_ssim(settings.stills_folder + new_pic,
                         old_pic) > settings.threshold_percentage):
             return True
+        else:
+            return False
 
     if(compute_ssim(settings.stills_folder + new_pic,
                     settings.stills_folder + old_pic) >
