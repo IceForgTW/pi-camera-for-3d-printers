@@ -52,7 +52,7 @@ global settings
 
 class settings:
     stills_folder = 'stills'
-    threshold_percentage = float(0.968)
+    threshold_percentage = float(0.965)
     timelapse_delay = 1  # delay in seconds
     begin_timelapse_delay = 420  # 5 minute delay to allow for heating and such
     camera = picamera.PiCamera()
@@ -134,17 +134,22 @@ def capture_baseline(settings=settings):
     z = settings.stills_folder + baseline_images[2]
 
     if(compute_ssim(x, y) > settings.threshold_percentage):
+        logging.debug("First baseline check succeeded!")
         if compute_ssim(y, z) > settings.threshold_percentage:
+            logging.debug("Second baseline check succeeded!")
             if compute_ssim(z, x) > settings.threshold_percentage:
                 logging.info("Successfully created baseline!")
                 settings.baseline_image = settings.stills_folder +\
                     baseline_images[0]
                 return True
             else:
+                logging.debug("Third baseline check failed!")
                 return None
         else:
+            logging.debug("Second baseline check failed!")
             return None
     else:
+        logging.debug("First baseline check failed!")
         return None
 
 
@@ -273,6 +278,7 @@ def main(settings=settings):
     # started another timelapse
     settings.currently_recording = False
     settings.picture_count = 0
+    beginning_recording_check = [False, False, False]
     picture_list_check = []
     final_list_check = [False for _ in range(15)]
 
@@ -344,22 +350,27 @@ def main(settings=settings):
 
             if not settings.currently_recording:
 
-                if not threshold_check(settings.pic_name):
+                beginning_recording_check.append(
+                    threshold_check(settings.pic_name))
+                beginning_recording_check.pop(0)
+
+                if False not in beginning_recording_check:
                     settings.currently_recording = True
                     settings.recording_start_time = int(time.time())
 
-                if settings.picture_count - 5 < 0:
-                    settings.recording_start_picture_count = 0
-                else:
-                    settings.recording_start_picture_count = \
-                        settings.picture_count - 5
+                    if settings.picture_count - 5 < 0:
+                        settings.recording_start_picture_count = 0
+                    else:
+                        settings.recording_start_picture_count = \
+                            settings.picture_count - 5
 
-                    oldest_pic = (settings.stills_folder + "pic{}.jpg".
-                                  format(str(settings.picture_count - 5).
-                                         zfill(5)))
+                oldest_pic = (settings.stills_folder + "pic{}.jpg".
+                              format(str(settings.picture_count - 6).
+                                     zfill(5)))
+                logging.debug("Oldest pic: {}".format(oldest_pic))
 
-                    if os.path.exists(oldest_pic):
-                        os.remove(oldest_pic)
+                if os.path.exists(oldest_pic):
+                    os.remove(oldest_pic)
 
             else:
                 if int(time.time()) < (settings.recording_start_time +
