@@ -268,8 +268,6 @@ def create_movie():
                   "Error log here:", e)
         return
 
-    upload_movie('timelapse.avi')
-
 
 # **************************************************
 # Program Logic
@@ -414,6 +412,7 @@ def main(settings=settings):
 
                             settings.currently_recording = False
                             create_movie()
+                            upload_movie('timelapse.avi')
                             # we made it this far, so restart the whole
                             # process!
                             shutil.rmtree(settings.stills_folder)
