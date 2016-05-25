@@ -52,7 +52,7 @@ global settings
 
 class settings:
     stills_folder = 'stills'
-    completed_timelapse_folder = 'completed_timelapses'
+    completed_timelapse_folder = '/completed_timelapses'
     threshold_percentage = float(0.965)
     timelapse_delay = 1  # delay in seconds
     begin_timelapse_delay = 420  # 5 minute delay to allow for heating and such
@@ -329,6 +329,7 @@ def main(settings=settings):
             )
         )
         os.mkdir(settings.stills_folder)
+
     settings.completed_timelapse_folder = os.getcwd() +\
         settings.completed_timelapse_folder
 
