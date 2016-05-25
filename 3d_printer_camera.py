@@ -280,7 +280,6 @@ def main(settings=settings):
     settings.picture_count = 0
     beginning_recording_check = [True for _ in range(5)]
     picture_list_check = []
-    final_list_check = [False for _ in range(15)]
 
     logging.info("Starting program!")
 
@@ -389,22 +388,6 @@ def main(settings=settings):
                 else:
                     pic_minus_seven = "pic{}.jpg".format(str(
                                         settings.picture_count - 7).zfill(5))
-                    final_picture_list = ["pic{}.jpg".
-                                          format(str(settings.picture_count-1).
-                                                 zfill(5)),
-                                          "pic{}.jpg".
-                                          format(str(settings.picture_count-2).
-                                                 zfill(5)),
-                                          "pic{}.jpg".
-                                          format(str(settings.picture_count-3).
-                                                 zfill(5)),
-                                          "pic{}.jpg".
-                                          format(str(settings.picture_count-4).
-                                                 zfill(5)),
-                                          "pic{}.jpg".
-                                          format(str(settings.picture_count-5).
-                                                 zfill(5))
-                                          ]
 
                     picture_list_check.append(
                             threshold_check(settings.pic_name,
@@ -417,20 +400,17 @@ def main(settings=settings):
                         logging.debug(picture_list_check)
                         if False not in picture_list_check:
                             logging.debug("picture_list_check returned all "
-                                          "True. Starting final check.")
-                            for older_pic in final_picture_list:
-                                final_list_check.append(
-                                    threshold_check(settings.pic_name,
-                                                    older_pic))
-                            logging.debug("Final picture list: {}".format(
-                                final_picture_list))
-                            if False not in final_list_check:
-                                settings.currently_recording = False
-                                create_movie()
-                                # we made it this far, so restart the whole
-                                # process!
-                                shutil.rmtree(settings.stills_folder)
-                                break
+                                          "True. Starting movie creation.")
+
+                            settings.currently_recording = False
+                            create_movie()
+                            # we made it this far, so restart the whole
+                            # process!
+                            shutil.rmtree(settings.stills_folder)
+                            break
+                    else:
+                        logging.debug("picture_list_check is not long enough"
+                                      " to begin checking.")
 
     except KeyboardInterrupt:
         # we don't need the baseline images anymore
