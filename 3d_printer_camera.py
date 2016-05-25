@@ -52,6 +52,7 @@ global settings
 
 class settings:
     stills_folder = 'stills'
+    completed_timelapse_folder = 'completed_timelapses'
     threshold_percentage = float(0.965)
     timelapse_delay = 1  # delay in seconds
     begin_timelapse_delay = 420  # 5 minute delay to allow for heating and such
@@ -242,6 +243,9 @@ def upload_movie(file_to_upload, settings=settings):
     except Exception as e:
         log_error("Something has gone wrong with the FTP process!",
                   e)
+        logging.info("Moving timelapse to completed folder.")
+        shutil.move(file_to_upload,
+                    settings.completed_timelapse_folder + file_to_upload)
 
 
 def create_movie():
@@ -280,6 +284,7 @@ def main(settings=settings):
     settings.picture_count = 0
     beginning_recording_check = [True for _ in range(5)]
     picture_list_check = []
+    settings.pic_name = "pic00000.jpg"
 
     logging.info("Starting program!")
 
@@ -317,8 +322,6 @@ def main(settings=settings):
 
     settings.stills_folder = os.getcwd() + settings.stills_folder
 
-    settings.pic_name = "pic00000.jpg"
-
     if not os.path.exists(settings.stills_folder):
         logging.debug(
             "Stills folder {} doesn't exist! Creating!".format(
@@ -326,6 +329,12 @@ def main(settings=settings):
             )
         )
         os.mkdir(settings.stills_folder)
+    settings.completed_timelapse_folder = os.getcwd() +\
+        settings.completed_timelapse_folder
+
+    if not os.path.exists(settings.completed_timelapse_folder):
+        logging.debug("Completed timelapse folder does not exist. Creating!")
+        os.mkdir(settings.completed_timelapse_folder)
 
     # Here we get our first image; we assume at this point that the camera is
     # oriented where it needs to go and that everything is prepared for the
@@ -393,7 +402,7 @@ def main(settings=settings):
                             threshold_check(settings.pic_name,
                                             pic_minus_seven))
 
-                    if len(picture_list_check) > 15:
+                    if len(picture_list_check) > 10:
                         # remove the first item in the list. That way the list
                         # constantly cycles through results.
                         picture_list_check.pop(0)
