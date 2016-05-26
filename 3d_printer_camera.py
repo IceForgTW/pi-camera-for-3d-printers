@@ -57,6 +57,7 @@ class settings:
     timelapse_delay = 1  # delay in seconds
     begin_timelapse_delay = 420  # 5 minute delay to allow for heating and such
     camera = picamera.PiCamera()
+    upload_skip = False
 
     # ignore the ones below; they get changed in runtime
 
@@ -184,23 +185,7 @@ def threshold_check(new_pic, old_pic=None, settings=settings):
 
 def upload_movie(file_to_upload, settings=settings):
 
-    if file_to_upload is None:
-        logging.error("Upload movie has received a None object! "
-                      "Skipping upload!")
-    return
-
-    if settings.ftp_host is None:
-        logging.error("No FTP host has been set! Skipping upload!")
-        return
-
-    if settings.ftp_username is None:
-        logging.error("No username has been given for FTP uploading!"
-                      " Skipping upload!")
-        return
-
-    if settings.ftp_username is None:
-        logging.error("No password has been set for FTP uploading!"
-                      " Skipping upload!")
+    if settings.upload_skip:
         return
 
     try:
@@ -273,16 +258,11 @@ def create_movie():
 # Program Logic
 # **************************************************
 
-
-def main(settings=settings):
-
-    # this is for resetting the values after the program has started
-    # started another timelapse
-    settings.currently_recording = False
-    settings.picture_count = 0
-    beginning_recording_check = [True for _ in range(5)]
-    picture_list_check = []
-    settings.pic_name = "pic00000.jpg"
+def set_up(settings=settings):
+    '''for items that only need to get run once'''
+    settings.stills_folder = os.getcwd() + settings.stills_folder
+    settings.completed_timelapse_folder = os.getcwd() +\
+        settings.completed_timelapse_folder
 
     logging.info("Starting program!")
 
@@ -306,19 +286,31 @@ def main(settings=settings):
             setting = None
             logging.debug("Loaded setting {} came up empty. Setting to "
                           "None!".format(setting.__name__))
+            logging.info("Setting {} is not set. Skipping FTP upload.".format(
+                         setting.__name__))
+            settings.upload_skip = True
 
     settings.stills_folder = config.get('Info', 'stills_folder_location')
 
-    if(settings.stills_folder[-1:] != "/" or
-            settings.stills_folder[-1:] != "\\"):
+    if not (settings.stills_folder.endswith("/") or
+            settings.stills_folder.endswith("\\")):
         # /folder becomes /folder/
         settings.stills_folder = settings.stills_folder + "/"
 
-    if(settings.stills_folder[:1] != "/" or
-            settings.stills_folder[:1] != "\\"):
+    if not (settings.stills_folder.beginswith("/") or
+            settings.stills_folder.beginswith("\\")):
         settings.stills_folder = "/" + settings.stills_folder
 
-    settings.stills_folder = os.getcwd() + settings.stills_folder
+
+def main(settings=settings):
+
+    # this is for resetting the values after the program has started
+    # started another timelapse
+    settings.currently_recording = False
+    settings.picture_count = 0
+    beginning_recording_check = [True for _ in range(5)]
+    picture_list_check = []
+    settings.pic_name = "pic00000.jpg"
 
     if not os.path.exists(settings.stills_folder):
         logging.debug(
@@ -327,9 +319,6 @@ def main(settings=settings):
             )
         )
         os.mkdir(settings.stills_folder)
-
-    settings.completed_timelapse_folder = os.getcwd() +\
-        settings.completed_timelapse_folder
 
     if not os.path.exists(settings.completed_timelapse_folder):
         logging.debug("Completed timelapse folder does not exist. Creating!")
@@ -433,5 +422,6 @@ if __name__ == '__main__':
 
     start_logging()
     settings = settings()
+    set_up()
     while True:
         main()
