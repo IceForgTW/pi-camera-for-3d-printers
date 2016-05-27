@@ -320,8 +320,8 @@ def set_up(settings=settings):
         # /folder becomes /folder/
         settings.stills_folder = settings.stills_folder + "/"
 
-    if not (settings.stills_folder.beginswith("/") or
-            settings.stills_folder.beginswith("\\")):
+    if not (settings.stills_folder.startswith("/") or
+            settings.stills_folder.startswith("\\")):
         settings.stills_folder = "/" + settings.stills_folder
 
 
