@@ -283,9 +283,6 @@ def create_movie():
 
 def set_up(settings=settings):
     '''for items that only need to get run once'''
-    settings.stills_folder = os.getcwd() + settings.stills_folder
-    settings.completed_timelapse_folder = os.getcwd() +\
-        settings.completed_timelapse_folder
 
     logging.info("Starting program!")
 
@@ -323,6 +320,10 @@ def set_up(settings=settings):
     if not (settings.stills_folder.startswith("/") or
             settings.stills_folder.startswith("\\")):
         settings.stills_folder = "/" + settings.stills_folder
+
+    settings.stills_folder = os.getcwd() + settings.stills_folder
+    settings.completed_timelapse_folder = os.getcwd() +\
+        settings.completed_timelapse_folder
 
 
 def main(settings=settings):
