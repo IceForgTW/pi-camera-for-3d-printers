@@ -304,10 +304,9 @@ def set_up(settings=settings):
     for setting in loaded_settings:
         if setting == "":
             setting = None
-            logging.debug("Loaded setting {} came up empty. Setting to "
-                          "None!".format(setting.__name__))
-            logging.info("Setting {} is not set. Skipping FTP upload.".format(
-                         setting.__name__))
+            logging.debug("Loaded setting for FTP came up empty. Setting to "
+                          "None!")
+            logging.info("Settings for FTP are not set. Skipping FTP upload.")
             settings.upload_skip = True
 
     settings.stills_folder = config.get('Info', 'stills_folder_location')
