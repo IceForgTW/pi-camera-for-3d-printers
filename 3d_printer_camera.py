@@ -183,54 +183,77 @@ def threshold_check(new_pic, old_pic=None, settings=settings):
     return False
 
 
+def rename_timelapse(movie, folder_contents):
+    '''Take the completed video and rename it based on whether or not there are
+    others already in the folder we're looking at. Pass in a list of the names
+    of items in the target folder for folder_contents.'''
+
+    last_dot = movie.rfind(".")
+
+    for ftu in xrange(99):
+        before_last_dot = movie[:last_dot]
+        after_last_dot = movie[last_dot:]
+
+        if(before_last_dot + str(ftu) + after_last_dot not in
+                folder_contents):
+            new_movie_name = before_last_dot + str(ftu) +\
+                after_last_dot
+
+            # gotta rename it so now we can upload it or do whatever to it
+            shutil.move(movie, new_movie_name)
+            movie = new_movie_name
+            return movie
+
+
 def upload_movie(file_to_upload, settings=settings):
 
-    if settings.upload_skip:
-        return
+    if not settings.upload_skip:
+        try:
+            logging.info("Attempting to upload finished file via FTP!")
 
-    try:
-        logging.info("Attempting to upload finished file via FTP!")
+            session = ftplib.FTP(settings.ftp_host)
+            session.login(settings.ftp_username, settings.ftp_password)
 
-        session = ftplib.FTP(settings.ftp_host)
-        session.login(settings.ftp_username, settings.ftp_password)
+            # check to see if there's already a timelapse.avi there
+            # if so, create a timelapse1.avi and so on and so forth
+            session_contents = []
+            session.retrlines("NLST", session_contents.append)
+            if file_to_upload in session_contents:
+                file_to_upload = rename_timelapse(file_to_upload,
+                                                  session_contents)
 
-        # check to see if there's already a timelapse.avi there
-        # if so, create a timelapse1.avi and so on and so forth
-        session_contents = []
-        session.retrlines("NLST", session_contents.append)
-        if file_to_upload in session_contents:
-            last_dot = file_to_upload.rfind(".")
-            for ftu in xrange(99):
-                before_last_dot = file_to_upload[:last_dot]
-                after_last_dot = file_to_upload[last_dot:]
+            # file to send
+            new_file = open(str(os.getcwd() + "/" + file_to_upload), 'rb')
+            # send the file
 
-                if(before_last_dot + str(ftu) + after_last_dot not in
-                        session_contents):
-                    new_file_to_upload = before_last_dot + str(ftu) +\
-                        after_last_dot
+            session.storbinary('STOR {}'.format(file_to_upload), new_file)
+            new_file.close()  # close file and FTP
+            session.quit()
 
-                    # gotta rename it so now we can upload it
-                    shutil.move(file_to_upload, new_file_to_upload)
-                    file_to_upload = new_file_to_upload
-                    break
+            logging.info("Successfully uploaded finished timelapse!!!")
+            os.remove(file_to_upload)
 
-        # file to send
-        new_file = open(str(os.getcwd() + "/" + file_to_upload), 'rb')
-        # send the file
+            return
 
-        session.storbinary('STOR {}'.format(file_to_upload), new_file)
-        new_file.close()  # close file and FTP
-        session.quit()
+        except Exception as e:
+            log_error("Something has gone wrong with the FTP process!",
+                      e)
 
-        logging.info("Successfully uploaded finished timelapse!!!")
-        os.remove(file_to_upload)
+    # we want this to run either if skip is set or the upload fails, so we put
+    # it down here.
 
-    except Exception as e:
-        log_error("Something has gone wrong with the FTP process!",
-                  e)
-        logging.info("Moving timelapse to completed folder.")
-        shutil.move(file_to_upload,
-                    settings.completed_timelapse_folder + file_to_upload)
+    logging.info("Moving timelapse to completed folder.")
+
+    completed_files = []
+    for (dirpath, dirnames, filenames) in os.walk(
+            settings.completed_timelapse_folder):
+        completed_files.extend(filenames)
+        break
+    if file_to_upload in completed_files:
+        file_to_upload = rename_timelapse(file_to_upload, completed_files)
+
+    shutil.move(file_to_upload,
+                settings.completed_timelapse_folder + file_to_upload)
 
 
 def create_movie():
@@ -308,7 +331,7 @@ def main(settings=settings):
     # started another timelapse
     settings.currently_recording = False
     settings.picture_count = 0
-    beginning_recording_check = [True for _ in range(5)]
+    beginning_recording_check = [True for _ in range(6)]
     picture_list_check = []
     settings.pic_name = "pic00000.jpg"
 
@@ -356,14 +379,14 @@ def main(settings=settings):
                     settings.currently_recording = True
                     settings.recording_start_time = int(time.time())
 
-                    if settings.picture_count - 5 < 0:
+                    if settings.picture_count - 7 < 0:
                         settings.recording_start_picture_count = 0
                     else:
                         settings.recording_start_picture_count = \
-                            settings.picture_count - 5
+                            settings.picture_count - 7
 
                 oldest_pic = (settings.stills_folder + "pic{}.jpg".
-                              format(str(settings.picture_count - 6).
+                              format(str(settings.picture_count - 10).
                                      zfill(5)))
                 logging.debug("Oldest pic: {}".format(oldest_pic))
 
